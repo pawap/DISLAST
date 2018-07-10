@@ -14,60 +14,55 @@ import java.util.Queue;
 
 public class Apriori {
 
-	public Queue<List<List<Integer>>> itemSets;
+	public Queue<List<List<Integer>>> resultItemSetsCollection;
+	private LinkedList<HashSet<Integer>> transactions;
+	double support;
 	
 	public Apriori(String filename, double support) {
-		itemSets = new LinkedList<List<List<Integer>>>();
-		LinkedList<HashSet<Integer>> transactions = getCsvData(filename);        
-        int numbOfTrans = transactions.size();
-        
-        HashMap<Integer,Integer> oneItemSets = new HashMap<Integer,Integer>();
-        HashSet<Integer> frequentOneItemSets = new HashSet<Integer>();
-        
+		resultItemSetsCollection = new LinkedList<List<List<Integer>>>();
+		transactions = getCsvData(filename); 
+		this.support = support;	
+	}
+
+	private void run() {
+		int currentCard = 1;
+        HashSet<Integer> nextItemPool = getFrequentItems();
+        HashSet<HashSet<Integer>> nextItemSets;
+        while (!(nextItemSets = generateFrequentSubsets(nextItemPool,currentCard)).isEmpty()) {
+        	nextItemPool = collapseHashSet(nextItemSets);
+        	printInfo(nextItemSets,currentCard);
+        	resultItemSetsCollection.add(sortHashSetOfHashSets(nextItemSets));
+        	currentCard++;
+        };
+	}
+	
+	private void printInfo(HashSet<HashSet<Integer>> nextItemSets, int currentCard) {
+		int size = nextItemSets.size();
+		System.out.println("There "+((size == 1)?"is":"are")+" exactly "+size+" frequent itemset"+((size == 1)?"":"s")+" containing "+currentCard+" item"+((currentCard == 1)?"":"s"));
+    	System.out.println(sortHashSetOfHashSets(nextItemSets));
+		
+	}
+
+	private HashSet<Integer> getFrequentItems() {
+		HashSet<Integer> frequentOneItemSets = new HashSet<Integer>();
+        HashMap<Integer,Integer> oneItemFrequencyMap = new HashMap<Integer,Integer>();
         for (HashSet<Integer> items: transactions) {
         	for (int i : items) {
         		Integer integer;
-        		if ((integer = oneItemSets.get(i)) != null) {
-        			oneItemSets.put(i, ++integer);
+        		if ((integer = oneItemFrequencyMap.get(i)) != null) {
+        			oneItemFrequencyMap.put(i, ++integer);
         		} else {
-        			oneItemSets.put(i, 1);
+        			oneItemFrequencyMap.put(i, 1);
         		}	
         	}
         }
-        
-        for (Entry<Integer,Integer> entry : oneItemSets.entrySet()) {
+        int numbOfTrans = transactions.size();
+        for (Entry<Integer,Integer> entry : oneItemFrequencyMap.entrySet()) {
         	if (entry.getValue() >= numbOfTrans * support) {
         		frequentOneItemSets.add(entry.getKey());
         	}
         }
-        
-//        HashSet<Integer> tst = new HashSet<Integer>();
-//        
-//        tst.add(1);
-//        tst.add(3);
-//        tst.add(5);
-//        System.out.println("tst"+generateSubsets(tst,2));
-//        System.out.println();
-//        HashSet<Integer> tst2 = new HashSet<Integer>();
-//        
-//        tst2.add(1);
-//        tst2.add(3);
-//        tst2.add(5);
-//        System.out.println("tst 21212"+tst.equals(tst2));       
-        
-        HashSet<Integer> frequentItemSets = frequentOneItemSets;
-        
-        int currentCard = 1;
-        HashSet<HashSet<Integer>> nextItemSets;
-        while (!(nextItemSets = generateFrequentSubsets(frequentItemSets,transactions,currentCard,0.01)).isEmpty()) {
-        	int size = nextItemSets.size();
-        	System.out.println("There "+((size == 1)?"is":"are")+" exactly "+size+" frequent itemset"+((size == 1)?"":"s")+" containing "+currentCard+" item"+((currentCard == 1)?"":"s"));
-        	frequentItemSets = collapseHashSet(nextItemSets);
-        	System.out.println(sortHashSetOfHashSets(nextItemSets));
-        	itemSets.add(sortHashSetOfHashSets(nextItemSets));
-        	currentCard++;
-        };
-       
+        return frequentOneItemSets;
 	}
 	
 	private List<List<Integer>> sortHashSetOfHashSets(HashSet<HashSet<Integer>> setOfSets) {
@@ -90,7 +85,7 @@ public class Apriori {
 	}
 
 
-	private HashSet<HashSet<Integer>> generateFrequentSubsets(HashSet<Integer> set, LinkedList<HashSet<Integer>> transactions, int cardinality, double support) {
+	private HashSet<HashSet<Integer>> generateFrequentSubsets(HashSet<Integer> set, int cardinality) {
 		HashSet<HashSet<Integer>> allSubsets = generateSubsets(set, cardinality);
 		HashSet<HashSet<Integer>> results = new HashSet<HashSet<Integer>>();
 		int size = transactions.size();
@@ -104,11 +99,26 @@ public class Apriori {
 			if (count >= size * support) {
 				results.add(subset);
 			}
-		}
-		
+		}		
 		return results;
 	}
 
+
+	public LinkedList<HashSet<Integer>> getTransactions() {
+		return transactions;
+	}
+
+	public void setTransactions(String filename) {
+		this.transactions = getCsvData(filename);
+	}
+
+	public double getSupport() {
+		return support;
+	}
+
+	public void setSupport(double support) {
+		this.support = support;
+	}
 
 	private HashSet<HashSet<Integer>> generateSubsets(HashSet<Integer> set, int cardinality) {
 		HashSet<HashSet<Integer>> result = new HashSet<HashSet<Integer>>();
@@ -167,5 +177,8 @@ public class Apriori {
 	
 	public static void main(String[] args) {
 		Apriori apr = new Apriori("transactions.txt", 0.01);
+//		apr.run();
+		apr.setTransactions("transactionslarge.txt");
+		apr.run();		
 	}
 }

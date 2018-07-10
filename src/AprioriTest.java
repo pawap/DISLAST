@@ -14,7 +14,7 @@ public class AprioriTest {
 	public void test() {
 		assertTrue((new LinkedList()).equals(new LinkedList()));
 		Apriori a = new Apriori("transactions.txt",0.01);
-		Queue<List<List<Integer>>> queue = a.itemSets;
+		Queue<List<List<Integer>>> queue = a.resultItemSetsCollection;
 		List<List<Integer>> l = queue.poll();
 		List<HashSet<Integer>> result = new LinkedList<HashSet<Integer>>();
 		for (List<Integer> list: l) {
