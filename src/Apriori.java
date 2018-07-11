@@ -26,10 +26,10 @@ public class Apriori {
 
 	private void run() {
 		int currentCard = 1;
-        HashSet<Integer> nextItemPool = getFrequentItems();
-        HashSet<HashSet<Integer>> nextItemSets;
-        while (!(nextItemSets = generateFrequentSubsets(nextItemPool,currentCard)).isEmpty()) {
-        	nextItemPool = collapseHashSet(nextItemSets);
+        HashSet<HashSet<Integer>> nextItemSets = getFrequentItems();
+        printInfo(nextItemSets,currentCard);
+        currentCard++;
+        while (!(nextItemSets = generateFrequentSubsets(nextItemSets)).isEmpty()) {
         	printInfo(nextItemSets,currentCard);
         	resultItemSetsCollection.add(sortHashSetOfHashSets(nextItemSets));
         	currentCard++;
@@ -43,8 +43,8 @@ public class Apriori {
 		
 	}
 
-	private HashSet<Integer> getFrequentItems() {
-		HashSet<Integer> frequentOneItemSets = new HashSet<Integer>();
+	private HashSet<HashSet<Integer>> getFrequentItems() {
+		HashSet<HashSet<Integer>> frequentOneItemSets = new HashSet<HashSet<Integer>>();
         HashMap<Integer,Integer> oneItemFrequencyMap = new HashMap<Integer,Integer>();
         for (HashSet<Integer> items: transactions) {
         	for (int i : items) {
@@ -59,7 +59,9 @@ public class Apriori {
         int numbOfTrans = transactions.size();
         for (Entry<Integer,Integer> entry : oneItemFrequencyMap.entrySet()) {
         	if (entry.getValue() >= numbOfTrans * support) {
-        		frequentOneItemSets.add(entry.getKey());
+        		HashSet<Integer> innerResult = new HashSet<Integer>();
+        		innerResult.add(entry.getKey());
+        		frequentOneItemSets.add(innerResult);
         	}
         }
         return frequentOneItemSets;
@@ -85,8 +87,8 @@ public class Apriori {
 	}
 
 
-	private HashSet<HashSet<Integer>> generateFrequentSubsets(HashSet<Integer> set, int cardinality) {
-		HashSet<HashSet<Integer>> allSubsets = generateSubsets(set, cardinality);
+	private HashSet<HashSet<Integer>> generateFrequentSubsets(HashSet<HashSet<Integer>> set) {
+		HashSet<HashSet<Integer>> allSubsets = generateSubsets(set);
 		HashSet<HashSet<Integer>> results = new HashSet<HashSet<Integer>>();
 		int size = transactions.size();
 		for (HashSet<Integer> subset: allSubsets) {
@@ -120,25 +122,19 @@ public class Apriori {
 		this.support = support;
 	}
 
-	private HashSet<HashSet<Integer>> generateSubsets(HashSet<Integer> set, int cardinality) {
+	private HashSet<HashSet<Integer>> generateSubsets(HashSet<HashSet<Integer>> sets) {
 		HashSet<HashSet<Integer>> result = new HashSet<HashSet<Integer>>();
-		if (cardinality == 1) {
-			for (int i: set) {
-				HashSet<Integer> entry = new HashSet<Integer>();
-				entry.add(i);
-				result.add(entry);
+		int card = 0;
+		for (HashSet<Integer> set: sets) {
+			card = set.size(); 
+			for (HashSet<Integer> set2: sets) {
+				HashSet<Integer> innerResult = new HashSet<Integer>(set);
+				innerResult.addAll(set2);
+				if (innerResult.size() == card + 1) {
+					result.add(innerResult);
+				}
 			}
-			return result; 
-		}
-		HashSet<HashSet<Integer>> recurse = generateSubsets(set, cardinality - 1);
-		for (int setItem: set) {
-			for (HashSet<Integer> items: recurse) {	
-				HashSet<Integer> entry = new HashSet<Integer>(items);
-				entry.add(setItem);
-				if (entry.size() == cardinality) {
-					result.add(entry);
-				}	
-			}
+			
 		}
 		return result;
 	}
@@ -177,7 +173,7 @@ public class Apriori {
 	
 	public static void main(String[] args) {
 		Apriori apr = new Apriori("transactions.txt", 0.01);
-//		apr.run();
+		apr.run();
 		apr.setTransactions("transactionslarge.txt");
 		apr.run();		
 	}
